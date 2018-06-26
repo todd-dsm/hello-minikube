@@ -1,0 +1,89 @@
+# Make a home
+mkdir kubernetes
+cd kubernetes/
+
+# Make a home for the app
+mkdir app
+vi app/server.js
+vi app/Dockerfile
+open -a 'Visual Studio Code.app'  .
+
+
+# Install the native minikube driver
+# or run: boot-minikube.sh
+docker images
+brew install docker-machine-driver-xhyve
+which docker-machine-driver-xhyve
+# If necessary
+brew reinstall docker-machine
+rm '/usr/local/bin/docker-machine'
+brew link --overwrite docker-machine
+brew reinstall docker-machine
+brew reinstall docker-machine-driver-xhyve
+
+# Boot the cluster
+minikube start
+minikube status
+minikube dashboard
+kubectl describe all
+kubectl cluster-info
+minikube dashboard
+eval $(minikube docker-env)
+
+# Verify were running local
+kubectl config view
+
+# Build v1 of the app
+docker build -t hello-node:v1 .
+docker images
+
+# Run v1 of the app
+kubectl run hello-node --image=hello-node:v1 --port=8080 --image-pull-policy=Never
+kubectl get deployment
+kubectl get pods	# for logging
+kubectl get events
+
+# Expose the deployment
+kubectl expose deployment hello-node --type=LoadBalancer
+kubectl get services
+
+# Check the logs
+kubectl logs -f hello-node-57c6b66f9c-xwbjn
+
+# Browser TEST
+minikube service hello-node
+#curl -4 http://localhost:PORT
+
+# Modify the app
+cd app/
+vi server.js
+docker build -t hello-node:v2 .
+
+# Upgrade the app to v2
+kubectl set image deployment/hello-node hello-node=hello-node:v2
+
+
+# Check the logs
+kubectl logs -f hello-node-57c6b66f9c-xwbjn
+
+# Browser TEST
+minikube service hello-node
+#curl -4 http://localhost:PORT
+
+# Display new deployment info
+kubectl describe deployment hello-node
+
+# Monitor Kubernetes
+minikube addons list
+minikube addons enable heapster
+
+# get stats
+kubectl get po,svc -n kube-system
+minikube addons enable heapster
+minikube dashboard
+
+
+# Clean up
+minikube stop
+eval $(minikube docker-env -u)
+minikube delete
